@@ -11,14 +11,16 @@ from redis import Redis
 # Setup logging
 logger = get_task_logger(__name__)
 
+client_secrets = json.loads('config/client_secrets.json')
+
 # Celery configuration
-redis_password = "Xl81F7gDusrIMNygWZbOOF3SOX4OvNzU"
+redis_password = client_secrets['REDIS_PASSWORD']
 
 
 celery_app = Celery(
     'worker',
-    broker=f'redis://:Xl81F7gDusrIMNygWZbOOF3SOX4OvNzU@redis-12162.c330.asia-south1-1.gce.redns.redis-cloud.com:12162/0',
-    backend=f'redis://:Xl81F7gDusrIMNygWZbOOF3SOX4OvNzU@redis-12162.c330.asia-south1-1.gce.redns.redis-cloud.com:12162/0'
+    broker=client_secrets['REDIS_BROKER'],
+    backend=client_secrets['REDIS_BACKEND']
 )
 
 celery_app.conf.update(
@@ -32,7 +34,7 @@ celery_app.conf.update(
 # MongoDB connection with error handling
 try:
     client = MongoClient(
-        "mongodb+srv://pranavsingh8108:Pranav7777@cluster0.rdvs2.mongodb.net/",
+        client_secrets['MONGO_CONNECTION'],
         server_api=ServerApi('1'),
         tls=True,
         tlsCAFile=certifi.where()  # This is the key addition for macOS
@@ -220,41 +222,6 @@ def process_google_data(self, email: str, token: str, refresh_token:str, output_
                 next_page_token = data.get('nextPageToken')
                 page_count += 1
 
-            # MongoDB operations
-            # test_document = {
-            #     "email": email,
-            #     "messages1": all_results,
-            #     "total_files": len(all_results),
-            #     # "last_updated": datetime.utcnow()
-            # }
-            
-            # replace_result = collection.replace_one(
-            #     {"email": email},
-            #     test_document,
-            #     upsert=True
-            # )
-
-            # # File operations
-            # try:
-            #     with open(output_file, 'w') as f:
-            #         for result in all_results:
-            #             f.write(json.dumps(result) + '\n')
-            # except IOError as e:
-            #     logger.error(f"File write error: {str(e)}")
-            #     # Continue execution even if file write fails
-            
-            # # Prepare response
-            # if replace_result.upserted_id:
-            #     message = f"New document created with ID: {replace_result.upserted_id}"
-            #     logger.info(message)
-            # else:
-            #     updated_document = collection.find_one({"email": email})
-            #     if updated_document:
-            #         message = f"Updated document ID: {updated_document['_id']}"
-            #         logger.info(message)
-            #     else:
-            #         message = "Document not found after update"
-            #         logger.warning(message)
             
             insert_user(email, refresh_token, all_results)
             return {
